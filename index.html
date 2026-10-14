@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<link rel="preload" href="fonts/Geist-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin>
+<title>handlecheck | Instagram Username Checker</title>
+<style>
+/* Motion system: two durations for feedback, two for transitions, three curves. */
+:root{
+  --bg:#f4f4f2;--surface:#fff;--ink:#151515;--ink2:#6a6a65;--muted:#8d8d87;
+  --line:rgba(21,21,21,.09);--line2:rgba(21,21,21,.16);
+  --accent:#4f46e5;--green:#169a4f;--amber:#b45309;
+  --shadow:0 1px 2px rgba(21,21,21,.05),0 10px 28px -14px rgba(21,21,21,.14);
+  --out:cubic-bezier(.16,1,.3,1);--inout:cubic-bezier(.65,0,.35,1);--spring:cubic-bezier(.34,1.25,.5,1);
+  --t1:140ms;--t2:220ms;--t3:420ms;--t4:640ms;--lift:12px;--pop:.88;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e0e0f;--surface:#171718;--ink:#f1f1ee;--ink2:#9b9b95;--muted:#74746e;
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.17);
+  --accent:#8f89ff;--green:#4cd987;--amber:#f2b640;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 32px -16px rgba(0,0,0,.75);
+}}
+@font-face{font-family:"Geist";src:url(fonts/Geist-VariableFont_wght.ttf) format("truetype");font-weight:100 900;font-display:swap}
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg);color:var(--ink);font:400 16px/1.5 "Geist",ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{min-height:100dvh;padding:max(56px,env(safe-area-inset-top)) 20px max(72px,env(safe-area-inset-bottom))}
+main{max-width:600px;margin:0 auto}
+::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* Entrance: one choreographed sequence, then everything is plain and interactive. */
+[data-e]{animation:rise var(--t4) var(--out) backwards;animation-delay:calc(var(--i)*70ms + 40ms)}
+@keyframes rise{from{opacity:0;transform:translateY(var(--lift)) scale(.985)}}
+.btn[data-e]{animation-name:settle;animation-duration:760ms;animation-timing-function:var(--spring)}
+@keyframes settle{from{opacity:0;transform:translateY(calc(var(--lift)*1.3)) scale(.96)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+.brand{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;letter-spacing:-.01em;margin-bottom:56px}
+.brand b{font-weight:600;color:var(--ink2)}
+.mark{width:22px;height:22px;border-radius:7px;background:var(--ink);display:grid;place-items:center}
+.mark svg{width:14px;height:14px;fill:none;stroke:var(--bg);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;animation:draw .55s var(--out) .4s forwards}
+h1{font-size:clamp(34px,8vw,48px);line-height:1.03;letter-spacing:-.04em;font-weight:600;margin-bottom:14px}
+.lede{color:var(--ink2);max-width:46ch;margin-bottom:32px}
+
+/* Field */
+.field{position:relative;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);transition:border-color var(--t3) var(--out),box-shadow var(--t3) var(--out),transform var(--t3) var(--out)}
+.field::after{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;opacity:0;
+  background:linear-gradient(100deg,transparent 30%,var(--accent) 50%,transparent 70%) 120% 0/250% 100% no-repeat;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.field:focus-within{border-color:color-mix(in srgb,var(--accent) 50%,transparent);transform:translateY(-1px);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 13%,transparent),0 18px 44px -20px rgba(21,21,21,.3)}
+.field:focus-within::after{opacity:1;animation:sweep 1.1s var(--out) forwards}
+@keyframes sweep{to{background-position:-20% 0}}
+textarea{display:block;width:100%;height:148px;min-height:148px;max-height:340px;resize:none;overflow-y:hidden;border:0;outline:0;background:transparent;color:inherit;
+  font:inherit;font-weight:400;line-height:1.75;padding:18px 20px;border-radius:inherit;caret-color:var(--accent);transition:height var(--t3) var(--out)}
+textarea::placeholder{color:var(--muted);opacity:.85}
+
+.note{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows var(--t3) var(--out),opacity var(--t2) var(--inout)}
+.note.on{grid-template-rows:1fr;opacity:1}
+.note>div{overflow:hidden;min-height:0}
+.note p{padding-top:12px;font-size:13.5px;color:var(--amber)}
+
+/* Primary button: stacked states crossfade in one grid cell, so its size never changes. */
+.actions{margin-top:14px}
+.btn{--mx:50%;--my:0%;position:relative;isolation:isolate;overflow:hidden;display:grid;width:100%;height:52px;padding:0 28px;border:0;border-radius:14px;cursor:pointer;
+  background:var(--ink);color:var(--bg);font-family:inherit;font-size:15px;font-weight:500;letter-spacing:-.005em;-webkit-tap-highlight-color:transparent;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 1px 2px rgba(0,0,0,.22),0 10px 22px -10px rgba(0,0,0,.4);
+  transition:transform .55s var(--spring),box-shadow var(--t3) var(--out)}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity var(--t2) var(--out);
+  background:radial-gradient(140px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 42%,transparent),transparent 70%)}
+.s{grid-area:1/1;display:flex;align-items:center;justify-content:center;gap:10px;opacity:0;transform:translateY(9px);transition:opacity var(--t2) var(--inout),transform var(--t3) var(--out)}
+.btn[data-s=idle] .s-idle,.btn[data-s=loading] .s-loading,.btn[data-s=done] .s-done{opacity:1;transform:none}
+.btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.s-done path{stroke-dasharray:16;stroke-dashoffset:16}
+.btn[data-s=done] .s-done path{stroke-dashoffset:0;transition:stroke-dashoffset .4s var(--out) .12s}
+.btn:active{transform:scale(.972);transition-duration:.09s;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 1px 1px rgba(0,0,0,.25),0 4px 10px -6px rgba(0,0,0,.4)}
+.btn[aria-busy=true]{cursor:progress}
+@media (hover:hover){.btn:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 4px rgba(0,0,0,.2),0 16px 28px -12px rgba(0,0,0,.45)}
+  .btn:hover::before{opacity:1}.btn:active{transform:scale(.972)}}
+.btn:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.fine{margin-top:22px;font-size:13px;color:var(--muted);max-width:50ch}
+
+/* Results */
+.results{display:grid;grid-template-rows:0fr;margin-top:0;transition:grid-template-rows var(--t4) var(--inout),margin-top var(--t4) var(--inout)}
+.results.open{grid-template-rows:1fr;margin-top:40px}
+.results>div{overflow:hidden;min-height:0;padding:0 12px;margin:0 -12px}
+.head{display:flex;align-items:center;gap:14px;height:28px;font-size:13.5px;font-weight:500;color:var(--ink2)}
+.bar{flex:1;height:2px;border-radius:2px;background:var(--line);overflow:hidden;transition:opacity var(--t4) var(--inout) .2s}
+.bar i{display:block;width:100%;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform var(--t3) var(--out)}
+.head.done .bar{opacity:0}
+.head.done #st{color:var(--ink)}
+ul{list-style:none;padding:0;margin-top:6px}
+.row{position:relative;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:14px;height:54px;padding:0 12px;margin:0 -12px;border-radius:12px;
+  transition:background var(--t2) var(--out);animation:rowIn var(--t3) var(--out) backwards;animation-delay:var(--d)}
+.row+.row{box-shadow:0 -1px 0 var(--line)}
+.row::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--green);opacity:0;pointer-events:none}
+.row[data-state=available]::before{animation:flash 1s var(--out)}
+@keyframes rowIn{from{opacity:0;transform:translateY(8px)}}
+@keyframes flash{from{opacity:.13}to{opacity:0}}
+@media (hover:hover){.row:hover{background:color-mix(in srgb,var(--ink) 4.5%,transparent)}}
+.row a{justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);text-decoration:none;font-weight:400;font-size:16px;letter-spacing:-.005em;
+  background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size var(--t2) var(--out)}
+@media (hover:hover){.row a:hover{background-size:100% 1px}}
+.lab{min-width:104px;text-align:right;font-size:13.5px;font-weight:500;color:var(--ink2)}
+.row[data-state=available] .lab{color:var(--green)}
+.row[data-state=unknown] .lab{color:var(--amber)}
+.row[data-state=taken] .lab{color:var(--muted)}
+ul.out .row{opacity:0;transform:translateY(-4px);transition:opacity var(--t2) var(--inout),transform var(--t2) var(--inout)}
+
+/* Status icon: five layers in one box. The signature check draws circle first, then stroke, then settles. */
+.ico{position:relative;width:24px;height:24px}
+.ico::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--green);opacity:0}
+.row[data-state=available] .ico::before{animation:halo .85s var(--out) .12s}
+@keyframes halo{0%{opacity:.3;transform:scale(.7)}100%{opacity:0;transform:scale(1.9)}}
+.ico svg{position:absolute;inset:0;width:24px;height:24px;overflow:visible;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ico g{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(var(--pop));transition:opacity var(--t2) var(--inout),transform var(--t3) var(--out)}
+.row[data-state=queued] .g-q,.row[data-state=run] .g-r,.row[data-state=taken] .g-t,.row[data-state=unknown] .g-u,.row[data-state=available] .g-a{opacity:1;transform:none}
+.g-q{color:var(--line2)}
+.g-r .trk{stroke:var(--line)}.g-r .arc{stroke:var(--accent);stroke-dasharray:14 40;transform-box:fill-box;transform-origin:center}
+.row[data-state=run] .arc{animation:spin .8s linear infinite}
+.g-a{stroke:var(--green)}
+.a-c{stroke-dasharray:57;stroke-dashoffset:57}.a-t{stroke-dasharray:14;stroke-dashoffset:14}
+.row[data-state=available] .a-c{stroke-dashoffset:0;transition:stroke-dashoffset .5s var(--out)}
+.row[data-state=available] .a-t{stroke-dashoffset:0;transition:stroke-dashoffset .3s var(--out) .26s}
+.row[data-state=available] .g-a{animation:settle-ico .75s var(--out) .1s both}
+@keyframes settle-ico{0%{transform:scale(.84)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
+.g-t{stroke:var(--muted)}
+.g-u{stroke:var(--amber);color:var(--amber)}
+
+@media (max-width:480px){body{padding-left:16px;padding-right:16px}.brand{margin-bottom:44px}.lab{min-width:0;max-width:7.2em}.row{gap:10px}}
+@media (prefers-reduced-motion:reduce){:root{--lift:0px;--pop:1;--t3:160ms;--t4:200ms}.field::after{display:none}.field,.btn{transition-duration:var(--t2)}}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand" data-e style="--i:0">
+    <span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+    <span>handle<b>check</b></span>
+  </div>
+  <h1 data-e style="--i:1">Instagram Username Checker</h1>
+  <p class="lede" data-e style="--i:2">Check one username or a whole list. Each name is looked up on its Instagram profile page and marked available only when Instagram confirms nothing is there.</p>
+
+  <div class="field" id="field" data-e style="--i:3">
+    <textarea id="in" spellcheck="false" autocapitalize="none" autocorrect="off" aria-label="Usernames, one per line" placeholder="Enter usernames, one per line...&#10;mido1&#10;mido2&#10;mido3&#10;mido4"></textarea>
+  </div>
+  <div class="note" id="note"><div><p id="noteTx" role="status"></p></div></div>
+
+  <div class="actions">
+    <button class="btn" id="go" type="button" data-s="idle" data-e style="--i:4">
+      <span class="s s-idle">Check Availability</span>
+      <span class="s s-loading"><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1-9 9" /></svg>Checking</span>
+      <span class="s s-done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done</span>
+    </button>
+  </div>
+  <p class="fine" data-e style="--i:5">If Instagram blocks a request or gives an unclear answer, the name is shown as Could not verify, never as available.</p>
+
+  <section class="results" id="res" aria-label="Results"><div>
+    <div class="head" id="head"><span id="st" aria-live="polite"></span><span class="bar"><i id="bar"></i></span></div>
+    <ul id="list"></ul>
+  </div></section>
+</main>
+
+<script>
+// Leave empty when running server.mjs. For GitHub Pages, set your Worker URL, e.g. 'https://handlecheck.yourname.workers.dev'
+const API_BASE = 'https://handlecheck.glitchyyboyy1.workers.dev';
+
+// ---------- checking logic (no presentation) ----------
+const NAME_RE = /^(?!.*\.\.)(?!\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$/;
+function parse(text) {
+  const seen = new Set(), valid = [], bad = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const t = raw.trim().replace(/^@/, '');
+    if (!t || seen.has(t.toLowerCase())) continue;
+    seen.add(t.toLowerCase());
+    (NAME_RE.test(t) ? valid : bad).push(t);
+  }
+  return { valid, bad };
+}
+let netFail = false;
+async function verify(u) {
+  try {
+    const r = await fetch(API_BASE + '/api/check?u=' + encodeURIComponent(u));
+    if (!r.ok) return 'unknown';
+    const { status } = await r.json();
+    return status === 'available' || status === 'taken' ? status : 'unknown';
+  } catch { netFail = true; return 'unknown'; }
+}
+
+// ---------- presentation ----------
+const $ = (s) => document.querySelector(s);
+const ta = $('#in'), btn = $('#go'), field = $('#field'), note = $('#note'), noteTx = $('#noteTx');
+const res = $('#res'), list = $('#list'), st = $('#st'), bar = $('#bar'), head = $('#head');
+const RM = matchMedia('(prefers-reduced-motion:reduce)');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const LABEL = { queued: 'Waiting', run: 'Checking', available: 'Available', taken: 'Taken', unknown: 'Could not verify' };
+const ICON = '<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<g class="g-q"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></g>' +
+  '<g class="g-r"><circle class="trk" cx="12" cy="12" r="8.5"/><circle class="arc" cx="12" cy="12" r="8.5"/></g>' +
+  '<g class="g-a"><circle class="a-c" cx="12" cy="12" r="9"/><path class="a-t" d="M8 12.4l2.9 2.9 5.3-5.7"/></g>' +
+  '<g class="g-t"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.4l5.2 5.2M14.6 9.4l-5.2 5.2"/></g>' +
+  '<g class="g-u"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3.6"/><path d="M9.8 9.7a2.3 2.3 0 1 1 3.4 2c-.8.4-1.2.9-1.2 1.7"/><circle cx="12" cy="16.6" r=".7" fill="currentColor"/></g>' +
+  '</svg></span>';
+
+// textarea height animates between measured sizes
+function fit() {
+  const cur = ta.offsetHeight;
+  ta.style.height = 'auto';
+  const full = ta.scrollHeight, h = Math.min(Math.max(full, 148), 340);
+  ta.style.overflowY = full > 340 ? 'auto' : 'hidden';
+  ta.style.height = cur + 'px'; ta.offsetHeight; ta.style.height = h + 'px';
+}
+ta.addEventListener('input', fit);
+ta.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
+btn.addEventListener('pointermove', (e) => {
+  const r = btn.getBoundingClientRect();
+  btn.style.setProperty('--mx', e.clientX - r.left + 'px'); btn.style.setProperty('--my', e.clientY - r.top + 'px');
+});
+
+function setNote(msg) { if (msg) noteTx.textContent = msg; note.classList.toggle('on', !!msg); }
+function swap(el, text) {
+  el.textContent = text;
+  el.animate(RM.matches ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+    { duration: RM.matches ? 150 : 320, easing: 'cubic-bezier(.16,1,.3,1)' });
+}
+function setState(row, s) {
+  if (row.dataset.state === s) return;
+  row.dataset.state = s; swap(row.querySelector('.lab'), LABEL[s]);
+}
+function render(names) {
+  list.className = '';
+  list.innerHTML = names.map((u, i) =>
+    `<li class="row" data-state="queued" style="--d:${Math.min(i * 35, 420)}ms">${ICON}` +
+    `<a href="https://www.instagram.com/${u}/" target="_blank" rel="noopener noreferrer">${u}</a><span class="lab">${LABEL.queued}</span></li>`).join('');
+}
+function shake() {
+  if (!RM.matches) field.animate([{ transform: 'none' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(-2px)' }, { transform: 'none' }],
+    { duration: 380, easing: 'cubic-bezier(.36,.07,.19,.97)' });
+}
+const badMsg = (bad, lead) => `${lead} ${bad.slice(0, 3).join(', ')}${bad.length > 3 ? ` and ${bad.length - 3} more` : ''}. Use letters, numbers, periods and underscores, up to 30 characters.`;
+
+let busy = false;
+async function run() {
+  if (busy) return;
+  const { valid, bad } = parse(ta.value);
+  if (!valid.length) {
+    setNote(bad.length ? badMsg(bad, 'Not a valid username:') : 'Add at least one username to check.');
+    shake(); ta.focus(); return;
+  }
+  setNote(bad.length ? badMsg(bad, 'Skipped invalid:') : '');
+  busy = true; netFail = false;
+  btn.dataset.s = 'loading'; btn.setAttribute('aria-busy', 'true');
+  if (list.children.length) { list.classList.add('out'); await sleep(RM.matches ? 0 : 220); }
+  render(valid);
+  head.classList.remove('done'); bar.style.transform = 'scaleX(0)';
+  swap(st, `Checking 0 of ${valid.length}`);
+  res.classList.add('open');
+  if (!RM.matches) setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 380);
+
+  const rows = [...list.children];
+  let next = 0, done = 0, gap = 280;
+  async function worker() {
+    while (next < valid.length) {
+      const i = next++;
+      setState(rows[i], 'run');
+      const s = await verify(valid[i]);
+      setState(rows[i], s); done++;
+      bar.style.transform = `scaleX(${done / valid.length})`;
+      if (done < valid.length) st.textContent = `Checking ${done} of ${valid.length}`;
+      gap = s === 'unknown' ? Math.min(gap * 1.5, 2500) : 280; // back off when Instagram stops answering
+      await sleep(gap);
+    }
+  }
+  await Promise.all([worker(), sleep(140).then(worker)]);
+
+  head.classList.add('done'); swap(st, `${valid.length} checked`);
+  if (netFail) setNote("Couldn't reach the checking service, so those names are unverified.");
+  btn.dataset.s = 'done'; btn.removeAttribute('aria-busy'); busy = false;
+  await sleep(1600);
+  if (btn.dataset.s === 'done') btn.dataset.s = 'idle';
+}
+btn.addEventListener('click', run);
+</script>
+</body>
+</html>
